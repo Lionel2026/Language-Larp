@@ -1,4 +1,5 @@
-import { ScrollView, Text, View } from "react-native";
+import { Link } from "expo-router";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const swatches = [
   { label: "Lingua Purple", className: "bg-lingua-purple" },
@@ -16,6 +17,12 @@ export default function Index() {
     <ScrollView className="flex-1 bg-background">
       <View className="gap-6 px-6 pb-12 pt-16">
         <Text className="text-h1 text-text-primary">Design System</Text>
+
+        <Link href="/onboarding" asChild>
+          <TouchableOpacity className="items-center rounded-2xl bg-lingua-purple px-4 py-3">
+            <Text className="text-h4 text-white">Open Onboarding</Text>
+          </TouchableOpacity>
+        </Link>
 
         <View className="gap-2">
           <Text className="text-h2 text-text-primary">Typography</Text>
