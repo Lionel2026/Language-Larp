@@ -4,7 +4,9 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 import { SocialAuthButtons } from "@/components/SocialAuthButtons";
 import { VerificationModal } from "@/components/VerificationModal";
 import { images } from "@/constants/images";
+import { isValidAuthEmail } from "@/lib/auth";
 import { colors } from "@/theme";
+import { useSignUp } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
 import { useState } from "react";
@@ -24,30 +26,47 @@ const sparkles = [
   { className: "bottom-2 right-0 text-warning", size: 16 },
 ] as const;
 
+type VerificationResult = {
+  success: boolean;
+  errorMessage?: string;
+};
+
 export default function SignUp() {
+  const { signUp, fetchStatus } = useSignUp();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showVerification, setShowVerification] = useState(false);
+  const [signUpError, setSignUpError] = useState<string | null>(null);
 
   const handleSignUp = async () => {
     const normalizedEmail = email.trim().toLowerCase();
-    const normalizedPassword = password.trim();
-    const isPlaceholderEmail =
-      !normalizedEmail ||
-      normalizedEmail === "your email" ||
-      normalizedEmail === "email" ||
-      normalizedEmail === "example@example.com";
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+    const trimmedPassword = password.trim();
 
-    if (isPlaceholderEmail || !isValidEmail || !normalizedPassword) {
+    if (!isValidAuthEmail(normalizedEmail) || !trimmedPassword) {
+      setSignUpError("Please enter a valid email and password.");
       return;
     }
 
-    const signUpResponse = await Promise.resolve({ requiresVerification: true });
+    setSignUpError(null);
 
-    if (signUpResponse.requiresVerification) {
-      setShowVerification(true);
+    const { error: passwordError } = await signUp.password({
+      emailAddress: normalizedEmail,
+      password,
+    });
+    if (passwordError) {
+      console.error(JSON.stringify(passwordError, null, 2));
+      setSignUpError("We couldn’t create your account. Please try again.");
+      return;
     }
+
+    const { error: codeError } = await signUp.verifications.sendEmailCode();
+    if (codeError) {
+      console.error(JSON.stringify(codeError, null, 2));
+      setSignUpError("We couldn’t send the verification code. Please try again.");
+      return;
+    }
+
+    setShowVerification(true);
   };
 
   return (
@@ -119,7 +138,12 @@ export default function SignUp() {
             label="Sign Up"
             className="mt-5"
             onPress={handleSignUp}
+            disabled={fetchStatus === "fetching"}
           />
+
+          {signUpError ? (
+            <Text className="mt-3 text-body-sm text-danger">{signUpError}</Text>
+          ) : null}
 
           <View className="mt-5 flex-row items-center gap-3">
             <View className="h-px flex-1 bg-border" />
@@ -143,6 +167,8 @@ export default function SignUp() {
               </TouchableOpacity>
             </Link>
           </View>
+
+          <View nativeID="clerk-captcha" />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -150,9 +176,64 @@ export default function SignUp() {
         visible={showVerification}
         email={email.trim() || "your email"}
         onClose={() => setShowVerification(false)}
-        onVerify={async () => {
-          const verificationResponse = await Promise.resolve({ isVerified: true });
-          return verificationResponse.isVerified;
+        onVerify={async (code): Promise<VerificationResult> => {
+          const { error } = await signUp.verifications.verifyEmailCode({ code });
+          if (error) {
+            console.error(JSON.stringify(error, null, 2));
+            return {
+              success: false,
+              errorMessage: "We couldn’t verify that code. Please try again.",
+            };
+          }
+
+          if (signUp.status === "missing_requirements") {
+            const requiredFields = signUp.missingFields ?? [];
+            const updatePayload = requiredFields.reduce<Record<string, unknown>>(
+              (acc, field) => {
+                if (field === "username") {
+                  acc.username = email.trim().split("@")[0];
+                } else if (field === "first_name") {
+                  acc.firstName = "";
+                } else if (field === "last_name") {
+                  acc.lastName = "";
+                } else if (field === "email_address") {
+                  acc.emailAddress = email.trim().toLowerCase();
+                }
+                return acc;
+              },
+              {}
+            );
+
+            if (Object.keys(updatePayload).length > 0) {
+              const { error: updateError } = await signUp.update(updatePayload);
+              if (updateError) {
+                console.error(JSON.stringify(updateError, null, 2));
+                return {
+                  success: false,
+                  errorMessage: "We couldn’t finish setting up your account. Please try again.",
+                };
+              }
+            }
+          }
+
+          if (signUp.status !== "complete") {
+            console.error("Sign-up attempt not complete:", signUp);
+            return {
+              success: false,
+              errorMessage: "Your sign-up is not complete yet. Please try again.",
+            };
+          }
+
+          const { error: finalizeError } = await signUp.finalize();
+          if (finalizeError) {
+            console.error(JSON.stringify(finalizeError, null, 2));
+            return {
+              success: false,
+              errorMessage: "We couldn’t finish setting up your account. Please try again.",
+            };
+          }
+
+          return { success: true };
         }}
       />
     </SafeAreaView>

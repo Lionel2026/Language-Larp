@@ -4,7 +4,9 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 import { SocialAuthButtons } from "@/components/SocialAuthButtons";
 import { VerificationModal } from "@/components/VerificationModal";
 import { images } from "@/constants/images";
+import { isValidAuthEmail } from "@/lib/auth";
 import { colors } from "@/theme";
+import { useSignIn } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
 import { useState } from "react";
@@ -25,27 +27,31 @@ const sparkles = [
 ] as const;
 
 export default function SignIn() {
+  const { signIn, fetchStatus } = useSignIn();
   const [email, setEmail] = useState("");
   const [showVerification, setShowVerification] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const normalizedEmail = email.trim().toLowerCase();
-    const isPlaceholderEmail =
-      !normalizedEmail ||
-      normalizedEmail === "your email" ||
-      normalizedEmail === "email" ||
-      normalizedEmail === "example@example.com";
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
 
-    if (isPlaceholderEmail || !isValidEmail) {
+    if (!isValidAuthEmail(normalizedEmail)) {
+      setLoginError("Please enter a valid email address.");
       return;
     }
 
-    const loginResponse = { requiresVerification: true };
+    setLoginError(null);
 
-    if (loginResponse.requiresVerification) {
-      setShowVerification(true);
+    const { error } = await signIn.emailCode.sendCode({
+      emailAddress: normalizedEmail,
+    });
+    if (error) {
+      console.error(JSON.stringify(error, null, 2));
+      setLoginError("We couldn’t send the verification code. Please try again.");
+      return;
     }
+
+    setShowVerification(true);
   };
 
   return (
@@ -106,7 +112,12 @@ export default function SignIn() {
             label="Log In"
             className="mt-5"
             onPress={handleLogin}
+            disabled={fetchStatus === "fetching"}
           />
+
+          {loginError ? (
+            <Text className="mt-3 text-body-sm text-danger">{loginError}</Text>
+          ) : null}
 
           <View className="mt-5 flex-row items-center gap-3">
             <View className="h-px flex-1 bg-border" />
@@ -137,6 +148,49 @@ export default function SignIn() {
         visible={showVerification}
         email={email.trim() || "your email"}
         onClose={() => setShowVerification(false)}
+        onVerify={async (code) => {
+          const { error } = await signIn.emailCode.verifyCode({ code });
+          if (error) {
+            console.error(JSON.stringify(error, null, 2));
+            return {
+              success: false,
+              errorMessage: "We couldn’t verify that code. Please try again.",
+            };
+          }
+
+          if (signIn.status === "needs_second_factor") {
+            return {
+              success: false,
+              errorMessage: "Two-factor authentication is required. Please complete it to continue.",
+            };
+          }
+
+          if (signIn.status === "needs_client_trust") {
+            return {
+              success: false,
+              errorMessage: "Please trust this device to continue signing in.",
+            };
+          }
+
+          if (signIn.status !== "complete") {
+            console.error("Sign-in attempt not complete:", signIn);
+            return {
+              success: false,
+              errorMessage: "Your sign-in is not complete yet. Please try again.",
+            };
+          }
+
+          const { error: finalizeError } = await signIn.finalize();
+          if (finalizeError) {
+            console.error(JSON.stringify(finalizeError, null, 2));
+            return {
+              success: false,
+              errorMessage: "We couldn’t finish signing you in. Please try again.",
+            };
+          }
+
+          return { success: true };
+        }}
       />
     </SafeAreaView>
   );

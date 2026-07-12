@@ -1,6 +1,7 @@
 import { Image } from "@/components/Image";
 import { images } from "@/constants/images";
 import { colors } from "@/theme";
+import { useAuth } from "@clerk/expo";
 import { Link, Stack } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -24,6 +25,30 @@ const bubbles = [
 ] as const;
 
 export default function Onboarding() {
+  const { isSignedIn, signOut } = useAuth();
+
+  if (isSignedIn) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View className="flex-1 items-center justify-center gap-4 px-6">
+          <Text className="text-h3 text-text-primary text-center">
+            You&apos;re already signed in.
+          </Text>
+          <Text className="text-body-md text-text-secondary text-center">
+            Sign out to go through onboarding and sign in again.
+          </Text>
+          <TouchableOpacity
+            onPress={() => signOut()}
+            className="mt-4 items-center justify-center rounded-full bg-lingua-purple px-8 py-4"
+          >
+            <Text className="text-h4 text-white">Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen options={{ headerShown: false }} />

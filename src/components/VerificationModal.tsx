@@ -15,11 +15,16 @@ import {
 
 const CODE_LENGTH = 6;
 
+type VerificationResult = {
+  success: boolean;
+  errorMessage?: string;
+};
+
 type VerificationModalProps = {
   visible: boolean;
   email: string;
   onClose: () => void;
-  onVerify?: (code: string) => Promise<boolean> | boolean;
+  onVerify?: (code: string) => Promise<VerificationResult> | VerificationResult;
 };
 
 export function VerificationModal({
@@ -29,12 +34,14 @@ export function VerificationModal({
   onVerify,
 }: VerificationModalProps) {
   const [code, setCode] = useState("");
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (!visible) return;
     const focusTimeout = setTimeout(() => {
       setCode("");
+      setVerificationError(null);
       inputRef.current?.focus();
     }, 300);
     return () => clearTimeout(focusTimeout);
@@ -44,16 +51,26 @@ export function VerificationModal({
     const digits = value.replace(/[^0-9]/g, "").slice(0, CODE_LENGTH);
     setCode(digits);
 
-    if (digits.length === CODE_LENGTH) {
-      Keyboard.dismiss();
-
-      const verificationResult = await Promise.resolve(onVerify?.(digits) ?? false);
-
-      if (verificationResult) {
-        onClose();
-        router.replace("/");
-      }
+    if (digits.length !== CODE_LENGTH) {
+      return;
     }
+
+    Keyboard.dismiss();
+
+    const verificationResult = await Promise.resolve(
+      onVerify?.(digits) ?? { success: false, errorMessage: "Unable to verify your code. Please try again." }
+    );
+
+    if (verificationResult.success) {
+      setVerificationError(null);
+      onClose();
+      router.replace("/");
+      return;
+    }
+
+    setVerificationError(
+      verificationResult.errorMessage ?? "Unable to verify your code. Please try again."
+    );
   };
 
   return (
@@ -100,6 +117,12 @@ export function VerificationModal({
             ))}
           </TouchableOpacity>
 
+          {verificationError ? (
+            <Text className="mt-4 text-body-sm text-danger">
+              {verificationError}
+            </Text>
+          ) : null}
+
           <TextInput
             ref={inputRef}
             value={code}
@@ -107,7 +130,7 @@ export function VerificationModal({
             keyboardType="number-pad"
             maxLength={CODE_LENGTH}
             placeholderTextColor={colors.textSecondary}
-            style={{ position: "absolute", opacity: 0, height: 0, width: 0 }}
+            style={{ position: "absolute", opacity: 0, height: 1, width: 1 }}
           />
         </View>
       </KeyboardAvoidingView>
