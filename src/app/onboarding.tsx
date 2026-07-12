@@ -1,7 +1,7 @@
 import { Image } from "@/components/Image";
 import { images } from "@/constants/images";
 import { colors } from "@/theme";
-import { Stack } from "expo-router";
+import { Link, Stack } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -69,12 +69,14 @@ export default function Onboarding() {
       </View>
 
       <View className="px-6 pb-6">
-        <TouchableOpacity className="relative items-center justify-center rounded-full bg-lingua-purple py-4">
-          <Text className="text-h4 text-white">Get Started</Text>
-          <Text className="absolute right-6 text-[20px] font-poppins-semibold text-white">
-            ›
-          </Text>
-        </TouchableOpacity>
+        <Link href="/sign-up" asChild>
+          <TouchableOpacity className="relative items-center justify-center rounded-full bg-lingua-purple py-4">
+            <Text className="text-h4 text-white">Get Started</Text>
+            <Text className="absolute right-6 text-[20px] font-poppins-semibold text-white">
+              ›
+            </Text>
+          </TouchableOpacity>
+        </Link>
       </View>
     </SafeAreaView>
   );
