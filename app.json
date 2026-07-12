@@ -8,8 +8,8 @@
     "scheme": "languagelarp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.anonymous.language-larp"
+      "bundleIdentifier": "com.anonymous.language-larp",
+      "appleTeamId": "LBZHZ4UATB"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +18,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.languagelarp"
     },
     "web": {
       "output": "static",
@@ -33,7 +34,10 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "@clerk/expo",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

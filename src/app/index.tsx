@@ -1,4 +1,5 @@
-import { Link } from "expo-router";
+import { useAuth } from "@clerk/expo";
+import { Link, Redirect } from "expo-router";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const swatches = [
@@ -13,6 +14,16 @@ const swatches = [
 ];
 
 export default function Index() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  if (!isLoaded) {
+    return null;
+  }
+
+  if (!isSignedIn) {
+    return <Redirect href="/onboarding" />;
+  }
+
   return (
     <ScrollView className="flex-1 bg-background">
       <View className="gap-6 px-6 pb-12 pt-16">
