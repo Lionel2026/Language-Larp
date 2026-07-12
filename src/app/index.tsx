@@ -35,6 +35,12 @@ export default function Index() {
           </TouchableOpacity>
         </Link>
 
+        <Link href="/language-select" asChild>
+          <TouchableOpacity className="items-center rounded-2xl bg-lingua-blue px-4 py-3">
+            <Text className="text-h4 text-white">Choose a Language</Text>
+          </TouchableOpacity>
+        </Link>
+
         <View className="gap-2">
           <Text className="text-h2 text-text-primary">Typography</Text>
           <Text className="text-h3 text-text-primary">Card / Module Title</Text>
