@@ -38,11 +38,16 @@ export default function Onboarding() {
           <Text className="text-body-md text-text-secondary text-center">
             Sign out to go through onboarding and sign in again.
           </Text>
+          <Link href="/" asChild>
+            <TouchableOpacity className="mt-4 items-center justify-center rounded-full bg-lingua-purple px-8 py-4">
+              <Text className="text-h4 text-white">Go to Home</Text>
+            </TouchableOpacity>
+          </Link>
           <TouchableOpacity
             onPress={() => signOut()}
-            className="mt-4 items-center justify-center rounded-full bg-lingua-purple px-8 py-4"
+            className="items-center justify-center rounded-full border border-lingua-purple px-8 py-4"
           >
-            <Text className="text-h4 text-white">Sign Out</Text>
+            <Text className="text-h4 text-lingua-purple">Sign Out</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

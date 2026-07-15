@@ -2,6 +2,7 @@ import { Image } from "@/components/Image";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { images } from "@/constants/images";
 import { languages } from "@/data/languages";
+import { useLanguageStore } from "@/store/languageStore";
 import { colors } from "@/theme";
 import type { LanguageCode } from "@/types/learning";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,6 +15,9 @@ export default function LanguageSelect() {
   const [query, setQuery] = useState("");
   const [selectedCode, setSelectedCode] = useState<LanguageCode>(
     languages[0].code,
+  );
+  const setSelectedLanguage = useLanguageStore(
+    (state) => state.setSelectedLanguage,
   );
 
   const filteredLanguages = useMemo(() => {
@@ -115,7 +119,13 @@ export default function LanguageSelect() {
       </ScrollView>
 
       <View className="px-6 pb-4">
-        <PrimaryButton label="Confirm" onPress={() => router.back()} />
+        <PrimaryButton
+          label="Confirm"
+          onPress={() => {
+            setSelectedLanguage(selectedCode);
+            router.replace("/");
+          }}
+        />
       </View>
 
       <Image
